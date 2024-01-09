@@ -1,0 +1,140 @@
+---
+title: "Reporte Previo Feriado Día del Trabajador 2023 `r params$Mi_region`"
+author: ''
+date: '24-04-2022'
+output:
+  powerpoint_presentation:
+    reference_doc: base2.pptx
+params:
+  Mi_region: Region Aysen Del Grl. Carlos Ibañez Del Campo
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+```
+
+**Día del Trabajador**
+
+Evolución de siniestros, fallecidos y lesionados a nivel nacional
+
+===
+```{r fallecidos,include = FALSE}
+
+library(readxl)
+library(flextable)
+library(tidyverse)
+library(officer)
+tabla_totales_anuales <- read_excel("C:/Users/fnbus/OneDrive/Escritorio/conaset/conaset_fb/Informes por feriados/mayo_trabajo/tabla_totales_anuales.xlsx")
+
+tabla_totales_anuales %>% 
+  mutate(Año=as.character(Año))->tabla_totales_anuales
+
+totales_por_region <- read_excel("C:/Users/fnbus/OneDrive/Escritorio/conaset/conaset_fb/Informes por feriados/mayo_trabajo/totales_por_region.xlsx")
+
+colnames(totales_por_region)[4]="Desde"
+colnames(totales_por_region)[5]="Hasta"
+colnames(totales_por_region)[6]="N° días"
+
+
+totales_por_region %>% 
+  mutate(Año=as.character(Año),
+         region=)->totales_por_region
+
+
+```
+
+```{r fallecidos tabla,echo = FALSE}
+
+flextable(tabla_totales_anuales) %>%
+  #add_header_row(values=c("",
+  #                        "Periodo",
+  #                        "",
+  #                        "Lesionados"),
+  #               colwidths = c(.5,2.5,1,6)) %>% 
+  autofit() %>% 
+  align(align = "center",part="all") %>% 
+  bg(i=2,bg="yellow")->tabla_resultado
+  #set_table_properties(layout = "autofit") %>% 
+  #width(j = "Desde",width=1.1) %>% 
+  #width(j = "Hasta",width=1.3) %>% 
+#
+  #  theme_vanilla()
+tabla_resultado %>% 
+  footnote(
+  i=1:4,
+  j=1,
+  value = as_paragraph(c(
+  "Fuente: Carabineros de Chile.",
+  "Elaboración: CONASET.",
+  "Fallecidos: Sólo hasta las 48 horas de ocurrido el siniestro.",
+  "Nota: Los años 2019, 2021 y 2022 NO corresponden a fines de semana largo.")),
+  ref_symbols = c("","","","")) %>% 
+  fontsize(size=7,part="footer") %>% 
+  bold(bold=TRUE,part="footer") %>% 
+  color(part = "footer", color = "#666666")->tabla_resultado;tabla_resultado
+
+
+
+```
+
+**Nota 1: Carabineros de Chile contabilizará los siniestros de tránsito a partir de las 00:00 horas del día previo al feriado hasta las 24 horas del último día.**
+
+**Nota 2: Los siniestros, fallecidos y lesionados en la celebración del Día del Trabajador 2023 serán comparados con los ocurridos en Semana Santa 2023.**
+
+**Nota 3: CONASET agrupa las 59 causas de siniestros de tránsito de Carabineros de Chile en 14 grandes grupos de causas.**
+
+**Nota 4: Los datos correspondientes a 2019, 2021 y 2022 no corresponden a un fin de semana largo. **
+
+**Nota 5: Los datos a presentar corresponden a 2020 por corresponder a un feriado de fin de semana largo. Sin embargo, no se contemplan como tal al corresponder a un año atípico a causa de la pandemia de COVID-19.**
+
+##
+**Día del Trabajador**
+
+Evolución de siniestros, fallecidos y lesionados, `r params$Mi_region`
+
+
+```{r fallecidos tabla region,echo = FALSE}
+
+flextable(totales_por_region %>% filter(region==params$Mi_region) %>% select(-c(region,Numero))) %>%
+  #add_header_row(values=c("",
+  #                        "Periodo",
+  #                        "",
+  #                        "Lesionados"),
+  #               colwidths = c(.5,2.5,1,6)) %>% 
+  autofit() %>% 
+  align(align = "center",part="all") %>% 
+  bg(i=2,bg="yellow")->ft;ft
+  #set_table_properties(layout = "autofit") %>% 
+  #width(j = "Desde",width=1.1) %>% 
+  #width(j = "Hasta",width=1.3) %>% 
+#
+  #  theme_vanilla()
+
+```
+
+##
+
+```{r plot fallecidos AAAA,echo = FALSE}
+
+fallecidos_causa_2020A <- read_excel("C:/Users/fnbus/OneDrive/Escritorio/conaset/conaset_fb/Informes por feriados/mayo_trabajo/fallecidos_causa_2020.xlsx")
+
+unique(totales_por_region$region)->regiones
+
+left_join(data.frame(region=regiones),fallecidos_causa_2020A,by = c("region"="region"))->data_3
+data_3[is.na(data_3)] <- 0
+
+ggplot(data_3 %>% filter(region==params$Mi_region),
+       aes(x="",y=`2020`,fill=`Causa (CONASET)`))+
+    geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0)->pie_region
+
+ggplot(data_3 %>% filter(region==params$Mi_region),
+       aes(x=`Causa (CONASET)`,y=`2020`,fill="red"))+
+    geom_bar(stat="identity")->bar_region
+
+gridExtra::grid.arrange(pie_region,bar_region,nrow=1,widths=c(2,1))
+
+
+
+```
